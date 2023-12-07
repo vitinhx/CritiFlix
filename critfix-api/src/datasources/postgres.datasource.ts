@@ -4,7 +4,7 @@ import {juggler} from '@loopback/repository';
 const config = {
   name: 'Postgres',
   connector: 'postgresql',
-  url: 'postgresql://postgres:ac4DCfcDecDf1C2C-BAdFfB*a*eDacd2@viaduct.proxy.rlwy.net:15841/railway',
+  url: 'link_do_banco_de_dados_via_railway', // aqui é necessário ao link do banco de dados (PostgreSQL) disponibilizado via RailWay
   host: '',
   port: 0,
   user: '',
