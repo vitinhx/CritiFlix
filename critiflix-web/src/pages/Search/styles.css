@@ -1,0 +1,142 @@
+.App {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+header {
+  background-color: #000;
+  color: #e5e5e5;
+  padding: 1rem;
+  width: calc(100% - 40px);
+  position: absolute;
+  top: 0;
+}
+
+#root {
+  width: 100%;
+}
+
+
+main {
+  flex: 1;
+  padding: 1rem;
+}
+
+#lancamentos {
+  padding: 1rem;
+}
+
+.App {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f5f5f5;
+  padding: 10px 20px;
+}
+
+.logo {
+  height: 50px;
+}
+
+.pesquisa {
+  display: flex;
+  align-items: center;
+}
+
+.pesquisa input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  margin-right: 10px;
+}
+
+.pesquisa button {
+  padding: 10px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  background-color: #597092;
+  color: white;
+}
+
+.opcoes {
+  display: flex;
+  align-items: center;
+}
+
+.opcoes button {
+  padding: 10px;
+  border: 1px solid #ccc;
+  margin-left: 10px;
+  cursor: pointer;
+  background-color: #597092;
+  color: white;
+}
+
+/* Default styles for all screen sizes */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f5f5f5;
+  padding: 10px 20px;
+}
+
+/* For smaller screens, adjust the logo size and layout */
+@media (max-width: 768px) {
+  .logo {
+    height: 30px;
+  }
+
+  .pesquisa {
+    display: block;
+    margin-top: 10px;
+    background-color: #597092;
+    color: white;
+  }
+
+  .opcoes {
+    display: flex;
+    flex-direction: column;
+    margin-top: 10px;
+  }
+
+  .opcoes button {
+    margin-top: 5px;
+  }
+}
+
+/* Default styles for all screen sizes */
+.filmes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 10px;
+}
+
+/* For smaller screens, reduce the number of columns */
+@media (max-width: 768px) {
+  .filmes {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* For smaller screens, adjust the image size */
+@media (max-width: 768px) {
+  .filmes img {
+    width: 100%;
+    height: auto;
+  }
+}
+
+/* For smaller screens, hide the details */
+@media (max-width: 768px) {
+  .filmes .info {
+    display: none;
+  }
+}

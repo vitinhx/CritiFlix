@@ -1,0 +1,278 @@
+/*
+	Script para criação das tabelas
+*/
+
+-- Excluir tabelas, domínios e tipos com CASCADE
+DROP TABLE IF EXISTS avaliacao CASCADE;
+DROP TABLE IF EXISTS atuacao CASCADE;
+DROP TABLE IF EXISTS direcao CASCADE;
+DROP TABLE IF EXISTS titulo_genero CASCADE;
+DROP TABLE IF EXISTS genero CASCADE;
+DROP TABLE IF EXISTS episodio CASCADE;
+DROP TABLE IF EXISTS temporada CASCADE;
+DROP TABLE IF EXISTS serie CASCADE;
+DROP TABLE IF EXISTS filme CASCADE;
+DROP TABLE IF EXISTS titulo CASCADE;
+DROP TABLE IF EXISTS usuario CASCADE;
+DROP TABLE IF EXISTS artista CASCADE;
+DROP TABLE IF EXISTS diretor CASCADE;
+DROP TABLE IF EXISTS pessoa CASCADE;
+
+-- Excluir domínios
+DROP DOMAIN IF EXISTS dm_nome CASCADE;
+DROP DOMAIN IF EXISTS dm_sexo CASCADE;
+DROP DOMAIN IF EXISTS dm_data_nasc CASCADE;
+DROP DOMAIN IF EXISTS dm_email CASCADE;
+DROP DOMAIN IF EXISTS dm_nota CASCADE;
+
+-- Criar dominio para nome
+
+CREATE DOMAIN dm_nome AS text
+NOT NULL
+CHECK(VALUE ~ '^(\w+|\s)+$');
+
+-- Criar tipo para sexo
+CREATE DOMAIN dm_sexo AS varchar(1) 
+NOT NULL
+CHECK(VALUE IN ('M', 'F'));
+
+-- Criar dominio para data de nascimento
+CREATE DOMAIN dm_data_nasc AS DATE
+NOT NULL
+CHECK (VALUE BETWEEN '1900-01-01' 
+	   AND (DATE_TRUNC('year', current_date) - INTERVAL '12 years'));
+	   
+-- Criar dominio para email
+CREATE DOMAIN dm_email AS text
+NOT NULL
+CHECK(VALUE ~ '[\w\d\.\-\_]+@(\.|\w+)+$');
+
+-- Criar tipo para nota de avaliacao
+CREATE DOMAIN dm_nota AS integer
+NOT NULL
+CHECK(VALUE BETWEEN 0 and 10);
+
+-- Criar a tabela pessoa
+CREATE TABLE IF NOT EXISTS pessoa(
+	id serial NOT NULL,
+	nome dm_nome,
+	sexo dm_sexo NOT NULL,
+	data_nasc dm_data_nasc,
+	PRIMARY KEY (id)
+);
+
+-- Criar a tabela diretor
+CREATE TABLE IF NOT EXISTS diretor(
+	id serial NOT NULL,
+	altura float NOT NULL,
+	apelido varchar(30),
+	biografia text NOT NULL,
+	nacionalidade varchar(40) NOT NULL,
+	id_pessoa serial NOT NULL,
+	PRIMARY KEY(id),
+	FOREIGN KEY (id_pessoa) REFERENCES pessoa(id)
+);
+
+-- Criar a tabela artista
+CREATE TABLE IF NOT EXISTS artista(
+	id serial NOT NULL,
+	altura float NOT NULL,
+	nacionalidade varchar(40) NOT NULL,
+	id_pessoa serial NOT NULL,
+	PRIMARY KEY(id),
+	FOREIGN KEY (id_pessoa) REFERENCES pessoa(id)
+);
+
+-- Criar a tabela usuario
+CREATE TABLE IF NOT EXISTS usuario(
+	id serial NOT NULL,
+	email dm_email,
+	senha text NOT NULL,
+	id_pessoa serial NOT NULL,
+	PRIMARY KEY(id),
+	FOREIGN KEY (id_pessoa) REFERENCES pessoa(id)
+);
+
+-- Criar a tabela titulo 
+CREATE TABLE IF NOT EXISTS titulo(
+	id serial NOT NULL,
+	nome text NOT NULL,
+	orcarmento real NOT NULL,
+	data_lancamento date NOT NULL,
+	sinopse text NOT NULL,
+	nota_media float,
+    where_view varchar(50) NOT NULL,
+    poster varchar(100) NOT NULL,
+	PRIMARY KEY(id)
+);
+
+-- Criar a tabela filme
+CREATE TABLE IF NOT EXISTS filme(
+	id serial NOT NULL,
+	duracao int NOT NULL,
+	ano_producao_inicial int NOT NULL,
+	ano_producao_final int NOT NULL,
+	distribuidor text NOT NULL,
+	id_titulo serial UNIQUE NOT NULL,
+	PRIMARY KEY(id),
+	FOREIGN KEY (id_titulo) REFERENCES titulo(id)
+);
+
+-- Criar a tabela serie
+CREATE TABLE IF NOT EXISTS serie(
+	id serial NOT NULL,
+	quant_temporada int NOT NULL,
+	quant_episodio int NOT NULL,
+	id_titulo serial UNIQUE NOT NULL,
+	PRIMARY KEY(id),
+	FOREIGN KEY (id_titulo) REFERENCES titulo(id)
+);
+
+-- Criar a tabela temporada
+CREATE TABLE IF NOT EXISTS temporada(
+	id serial NOT NULL,
+	nome text NOT NULL,
+	data_lancamento date NOT NULL,
+	quant_episodio int NOT NULL,
+	id_serie serial NOT NULL,
+	PRIMARY KEY(id),
+	FOREIGN KEY (id_serie) REFERENCES serie(id)
+);
+
+-- Criar a tabela episodio
+CREATE TABLE IF NOT EXISTS episodio(
+	id serial NOT NULL,
+    number int NOT NULL,
+	nome text NOT NULL,
+	duracao int NOT NULL,
+	sinopse text NOT NULL,
+	id_temporada serial NOT NULL,
+	PRIMARY KEY(id),
+	FOREIGN KEY (id_temporada) REFERENCES temporada(id)
+);
+
+-- Criar a tabela genero
+CREATE TABLE IF NOT EXISTS genero(
+	id serial NOT NULL,
+	nome text NOT NULL,
+	PRIMARY KEY (id)
+);
+
+-- Criar a tabela titulo-genero
+CREATE TABLE IF NOT EXISTS titulogenero(
+	tituloid serial NOT NULL,
+	generoid serial NOT NULL,
+	PRIMARY KEY (tituloid, generoid),
+	FOREIGN KEY (tituloid) REFERENCES titulo(id),
+	FOREIGN KEY (generoid) REFERENCES genero(id)
+);
+
+-- Criar a tabela avaliacao
+CREATE TABLE IF NOT EXISTS avaliacao(
+	id serial NOT NULL,
+	descricao text NOT NULL,
+	nota dm_nota,
+	id_titulo serial NOT NULL,
+	id_usuario serial NOT NULL,
+	PRIMARY KEY (id),
+	FOREIGN KEY (id_titulo) REFERENCES titulo(id),
+	FOREIGN KEY (id_usuario) REFERENCES usuario(id)
+);
+
+-- Criar a tabela atuacao
+CREATE TABLE IF NOT EXISTS atuacao(
+	tituloid serial NOT NULL,
+	artistaid serial NOT NULL,
+	PRIMARY KEY (tituloid, artistaid),
+	FOREIGN KEY (tituloid) REFERENCES titulo(id),
+	FOREIGN KEY (artistaid) REFERENCES artista(id)
+);
+
+-- Criar a tabela direcao
+CREATE TABLE IF NOT EXISTS direcao(
+	tituloid serial NOT NULL,
+	diretorid serial NOT NULL,
+	PRIMARY KEY (tituloid, diretorid),
+	FOREIGN KEY (tituloid) REFERENCES titulo(id),
+	FOREIGN KEY (diretorid) REFERENCES diretor(id)
+);
+
+-- Funções
+
+-- Função para mostrar o tempo de produção do filme: 
+CREATE OR REPLACE FUNCTION tempo_producao(int) RETURNS int AS $$
+	SELECT (filme.ano_producao_final - filme.ano_producao_inicial) AS "tempo de produção" FROM titulo 
+		JOIN filme ON filme.id_titulo = titulo.id 
+		WHERE titulo.id = $1;
+$$ LANGUAGE sql;
+
+-- Função para listar todos os títulos de um gênero específico:
+CREATE OR REPLACE FUNCTION listar_por_genero(int) RETURNS setof varchar AS $$
+    SELECT titulo.nome FROM titulo
+		JOIN titulogenero ON titulo.id = titulogenero.tituloId
+		JOIN genero ON titulogenero.generoId = genero.id
+		WHERE genero.id = $1;
+$$ LANGUAGE sql;
+
+-- Função para listar todos os artistas de um título:
+CREATE OR REPLACE FUNCTION listar_artistas_por_titulo(int) RETURNS setof varchar AS $$
+    SELECT pessoa.nome FROM atuacao
+		JOIN artista ON atuacao.artistaid = artista.id
+		JOIN pessoa ON artista.id_pessoa = pessoa.id
+		WHERE atuacao.tituloId = $1;
+$$ LANGUAGE sql;
+
+-- Triggers
+
+-- Trigger para calcular a média das notas de um título:
+CREATE OR REPLACE FUNCTION media_notas() RETURNS trigger AS $$
+	DECLARE
+		media float;
+	BEGIN
+    	SELECT AVG(nota) INTO media FROM avaliacao WHERE id_titulo = NEW.id_titulo;
+		media := (media + NEW.nota) / 2;
+
+		IF media IS NULL THEN
+			media := NEW.nota; -- ou outro valor padrão desejado
+		END IF;
+	
+		UPDATE titulo 
+			SET nota_media = media
+			WHERE titulo.id = NEW.id_titulo;
+		RETURN NEW;
+	END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER tg_media_nota BEFORE INSERT ON avaliacao FOR EACH ROW
+	EXECUTE PROCEDURE media_notas();
+
+-- Trigger para atualizar "quant_episodio" na tabela serie ao inserir uma nova temporada
+CREATE OR REPLACE FUNCTION atualizar_quant_episodio() RETURNS TRIGGER AS $$
+	BEGIN
+		UPDATE serie
+		SET quant_episodio = (
+			SELECT SUM(quant_episodio) FROM temporada
+			WHERE id_serie = NEW.id_serie
+		)
+		WHERE id = NEW.id_serie;
+
+		RETURN NEW;
+	END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trig_atualizar_quant_episodio AFTER INSERT ON temporada FOR EACH ROW
+	EXECUTE FUNCTION atualizar_quant_episodio();
+
+--Trigger para verificar e interromper a inserção de nome de genero repetido
+CREATE OR REPLACE FUNCTION verifica_genero_repetido() RETURNS TRIGGER AS $$
+	BEGIN
+		IF EXISTS (SELECT 1 FROM genero WHERE nome = NEW.nome) THEN
+			RAISE EXCEPTION 'Nome de gênero já existe: %', NEW.nome;
+		END IF;
+
+		RETURN NEW;
+	END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trig_verifica_genero_repetido
+	BEFORE INSERT OR UPDATE ON genero FOR EACH ROW EXECUTE FUNCTION verifica_genero_repetido();
